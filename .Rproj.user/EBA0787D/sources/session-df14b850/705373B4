@@ -3,9 +3,9 @@
     "path": "~/Stat 348/KaggleBikeShare/BikeShare.R",
     "project_path": "BikeShare.R",
     "type": "r_source",
-    "hash": "2508551107",
+    "hash": "0",
     "contents": "",
-    "dirty": false,
+    "dirty": true,
     "created": 1757094129657.0,
     "source_on_save": false,
     "relative_order": 1,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "33,0",
-        "scrollLine": "13"
+        "cursorPosition": "65,0",
+        "scrollLine": "45"
     },
     "folds": "",
     "lastKnownWriteTime": 1757359627,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1757359627216,
+    "last_content_update": 1757527820969,
     "read_only": false,
     "read_only_alternatives": []
 }
