@@ -12,26 +12,21 @@ train_file <- vroom("train.csv")
 
 skimr::skim(test_file)
 skimr::skim(train_file)
+# dplyr::glimpse(dataset) - lists the variable type of each column (makes sure each variable is the right type)
+# skimr::skim(dataset) - nice overview of the dataset
+# DataExploerer::plot_intro(dataset) - visualization of glimpse()
+# DataExploerer::plot_correlation(dataset) - correlation heat map between variables
+# DataExplorer::plot_bar(dataset) - bar charts of all discrete variables
+# DataExploerer::plot_histograms(dataset) - histograms of all numeric variables
+# DataExplorer::plot_missing(dataset) - percent missing in each column
 
-DataExplorer::plot_correlation(test_file)
-DataExplorer::plot_correlation(train_file)
-
-plot1 <- ggplot(test_file, aes(x = weather)) +
-  geom_bar()
-
-plot2 <- ggplot(test_file, aes(x = atemp)) +
-  geom_histogram()
-
-plot3 <- ggplot(train_file, aes(x = registered, y = count)) +
-  geom_point() + geom_smooth()
-
-plot4 <- ggplot(train_file, aes(x = casual)) +
-  geom_histogram()
-
-(plot1 + plot2) / (plot3 + plot4)
-
-#barplot of weather
-
+# ggplot()
+# geom_point() - scatterplots
+# geom_bar() - bar plots
+# geom_density() - density plots
+# geom_histogram() - histograms
+# geom_smooth() - adds trend line
+# geom_boxplot() - boxplot
 
 
 train_file <- train_file %>%
@@ -47,7 +42,7 @@ my_recipe <- recipe(count ~ ., data = train_file) %>%
   step_rm(atemp)
 prepped_recipe <- prep(my_recipe)
 baked_recipie <- bake(prepped_recipe, new_data = train_file)
-  
+
 
 
 ## Setup and Fit the Linear Regression Model
@@ -71,21 +66,3 @@ lin_preds <- lin_preds %>%
   mutate(.pred = exp(.pred))
 
 head(baked_recipie, 5)
-
-
-## Generate Predictions Using Linear Model
-bike_predictions <- predict(my_linear_model, new_data=test_file) # Use fit to predict
-bike_predictions ## Look at the output
-
-
-# Format the Predictions for Submission to Kaggle
-kaggle_submission <- bike_predictions %>%
-bind_cols(., test_file) %>% #Bind predictions with test data
-  select(datetime, .pred) %>% #Just keep datetime and prediction variables
-  rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
-  mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
-  mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
-
-## Write out the file
-vroom_write(x=kaggle_submission, file="./LinearPreds.csv", delim=",")
-
