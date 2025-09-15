@@ -6,6 +6,7 @@ library(patchwork)
 library(skimr)
 library(DataExplorer)
 library(dplyr)
+library(glmnet)
 
 test_file <- vroom("test.csv")
 train_file <- vroom("train.csv")
@@ -38,12 +39,25 @@ my_recipe <- recipe(count ~ ., data = train_file) %>%
   step_mutate(weather = ifelse(weather == 4, 3, weather)) %>%
   step_mutate(weather = as.factor(weather)) %>%
   step_time(datetime, features = "hour") %>%
+  step_mutate(
+    hour_sin = sin(2 * pi * datetime_hour / 24),
+    hour_cos = cos(2 * pi * datetime_hour / 24)) %>%
+  step_date(datetime, features = c("dow", "doy")) %>%  # add day-of-week, day-of-year
+  step_rm(datetime) %>%
   step_mutate(season = as.factor(season)) %>%
-  step_rm(atemp)
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors())
 prepped_recipe <- prep(my_recipe)
 baked_recipie <- bake(prepped_recipe, new_data = train_file)
 
+preg_model <- linear_reg(penalty=1, mixture=0) %>% #Set model and tuning
+  set_engine("glmnet")
 
+preg_wf <- workflow() %>%
+add_recipe(my_recipe) %>%
+add_model(preg_model) %>%
+fit(data=train_file)
+predict(preg_wf, new_data=test_file)
 
 ## Setup and Fit the Linear Regression Model
 my_linear_model <- linear_reg() %>% #Type of model
@@ -66,3 +80,17 @@ lin_preds <- lin_preds %>%
   mutate(.pred = exp(.pred))
 
 head(baked_recipie, 5)
+
+kaggle_submission <- bike_predictions %>%
+  bind_cols(., test_file) %>% #Bind predictions with test data
+  select(datetime, .pred) %>% #Just keep datetime and prediction variables
+  rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
+  mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
+  mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
+
+## Write out the file
+vroom_write(x=kaggle_submission, file="./WorkflowPreds.csv", delim=",")
+
+# sine and cosine of hour
+# break hour down into a factor throughout the week
+# log transformation on count

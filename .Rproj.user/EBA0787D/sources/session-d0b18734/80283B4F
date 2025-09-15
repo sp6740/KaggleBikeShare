@@ -3,9 +3,9 @@
     "path": "~/Stat 348/KaggleBikeShare/Workflow.R",
     "project_path": "Workflow.R",
     "type": "r_source",
-    "hash": "2034491784",
+    "hash": "0",
     "contents": "",
-    "dirty": false,
+    "dirty": true,
     "created": 1757362139739.0,
     "source_on_save": false,
     "relative_order": 4,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "13,23",
-        "scrollLine": "0"
+        "cursorPosition": "93,0",
+        "scrollLine": "74"
     },
     "folds": "",
     "lastKnownWriteTime": 1757705485,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1757705485653,
+    "last_content_update": 1757963746177,
     "read_only": false,
     "read_only_alternatives": []
 }
