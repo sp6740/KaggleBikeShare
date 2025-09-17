@@ -1,0 +1,30 @@
+"0","cat('"
+"0","\\begin{table}[h!]"
+"0","\\centering"
+"0","\\begin{tabular}{l|cc}"
+"0","\\hline"
+"0"," & \\multicolumn{2}{c}{\\textbf{Progesterone}} \\\\"
+"0","\\textbf{Estrogen} & \\textbf{Positive} & \\textbf{Negative} \\\\"
+"0","\\hline"
+"0","Positive & 13/28 & 4/28 \\\\"
+"0","Negative & 2/28  & 9/28 \\\\"
+"0","\\hline"
+"0","\\end{tabular}"
+"0","\\caption{ }"
+"0","\\end{table}"
+"0","')"
+"1","
+\begin{table}[h!]
+\centering
+\begin{tabular}{l|cc}
+\hline
+ & \multicolumn{2}{c}{\textbf{Progesterone}} \\
+\textbf{Estrogen} & \textbf{Positive} & \textbf{Negative} \\
+\hline
+Positive & 13/28 & 4/28 \\
+Negative & 2/28  & 9/28 \\
+\hline
+\end{tabular}
+\caption{ }
+\end{table}
+"

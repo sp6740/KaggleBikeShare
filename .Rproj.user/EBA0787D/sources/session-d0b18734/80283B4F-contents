@@ -42,7 +42,7 @@ my_recipe <- recipe(count ~ ., data = train_file) %>%
   step_mutate(
     hour_sin = sin(2 * pi * datetime_hour / 24),
     hour_cos = cos(2 * pi * datetime_hour / 24)) %>%
-  step_date(datetime, features = c("dow", "doy")) %>%  # add day-of-week, day-of-year
+  step_date(datetime, features =  "doy") %>%  # add day-of-week, day-of-year
   step_rm(datetime) %>%
   step_mutate(season = as.factor(season)) %>%
   step_dummy(all_nominal_predictors()) %>%
@@ -50,7 +50,7 @@ my_recipe <- recipe(count ~ ., data = train_file) %>%
 prepped_recipe <- prep(my_recipe)
 baked_recipie <- bake(prepped_recipe, new_data = train_file)
 
-preg_model <- linear_reg(penalty=1, mixture=0) %>% #Set model and tuning
+preg_model <- linear_reg(penalty=100, mixture=.3) %>% #Set model and tuning
   set_engine("glmnet")
 
 preg_wf <- workflow() %>%
@@ -81,7 +81,7 @@ lin_preds <- lin_preds %>%
 
 head(baked_recipie, 5)
 
-kaggle_submission <- bike_predictions %>%
+kaggle_submission <- lin_preds %>%
   bind_cols(., test_file) %>% #Bind predictions with test data
   select(datetime, .pred) %>% #Just keep datetime and prediction variables
   rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)

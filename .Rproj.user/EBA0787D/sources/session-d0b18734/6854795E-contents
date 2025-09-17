@@ -1,0 +1,251 @@
+---
+title: "Stat 251 - Homework 1"
+author: "Sophia Parker"
+format: pdf
+editor: visual
+---
+
+For this homework, you will be doing some questions \`\`by hand" (in latex code) and using R for others. After completing the assignment, click the **Render** button at the top bar of RStudio. This will create a PDF that you will upload to Learning Suite.
+
+------------------------------------------------------------------------
+
+```{r, results='asis', echo=FALSE}
+cat('
+\\begin{table}[h!]
+\\centering
+\\begin{tabular}{l|cc}
+\\hline
+ & \\multicolumn{2}{c}{\\textbf{Progesterone}} \\\\
+\\textbf{Estrogen} & \\textbf{Positive} & \\textbf{Negative} \\\\
+\\hline
+Positive & 13/28 & 4/28 \\\\
+Negative & 2/28  & 9/28 \\\\
+\\hline
+\\end{tabular}
+\\caption{ }
+\\end{table}
+')
+```
+
+#### Question 1
+
+Table 1 gives proportions of estrogen- and progesterone-receptor status for 28 tumors.\
+(The proportions are from fictional data, but we’ll suppose it was authentic.)\
+Let $A$ be the event that a tumor is estrogen-receptor positive.\
+Let $B$ be the event that it is progesterone-receptor positive.
+
+a)  What is $P(B)$?
+
+15/28 = 54%
+
+b)  What is $P(A \mid B)$?
+
+(13/28)/(15/28) = 87%
+
+c)  What is $P(A \mid B^c)$?
+
+(4/28)/(13/28) = 31%
+
+d)  Use the law of total probability to find $P(A)$.
+
+(13/15) \* (15/28) + (4/13) \* (13/28) = 61%
+
+e)  Use Bayes’ rule and your calculations of $P(A \mid B)$, $P(A \mid B^c)$, and $P(B)$ to find $P(B \mid A)$.\
+    \[In this instance, you can check your answer by calculating $P(B \mid A)$ directly from the table, and you should do so.\]
+
+((13/15) \* (15/28))/((13/15) \* (15/28) + (4/13) \* (13/28)) = 76%
+
+#### Question 2
+
+For any events $A$ and $B$, show that\
+$$
+\Pr(A) = \Pr(A \mid B)\Pr(B) + \Pr(A \mid B^c)\Pr(B^c).
+$$\
+Justify each step with a probability rule.
+
+$$
+A = (A \cap B) \cup (A \cap B^c).
+$$\
+We first partition A by B and B\^c, and since they are disjoint, we can do the following.
+
+$$
+\Pr(A) = \Pr(A \cap B) + \Pr(A \cap B^c)
+$$\
+
+$$
+\Pr(A \cap B) = \Pr(A \mid B)\Pr(B)
+$$\
+Because of conditional probability, we can do the above. When we add the two together, we get what is below.
+
+$$
+\Pr(A) = \Pr(A \mid B)\Pr(B) + \Pr(A \mid B^c)\Pr(B^c)
+$$\
+
+#### Question 3
+
+For any events $A$ and $B$, show that\
+$$
+\Pr(A \mid B) = \frac{\Pr(B \mid A)\Pr(A)}{\Pr(B)}.
+$$\
+Justify each step with a probability rule.
+
+Here we have the definition of conditional probability (A given B)
+
+$$
+\Pr(A \mid B) = \frac{\Pr(A \cap B)}{\Pr(B)}
+$$\
+Here is the definition of conditional probability (B given A), just rearranged
+
+$$
+\Pr(B \mid A) = \frac{\Pr(A \cap B)}{\Pr(A)}
+$$\
+We can multiply both sides by Pr(A) and substitute the expression in from above to get Bayes' rule.
+
+$$
+\Pr(A \mid B) = \frac{\Pr(A \cap B)}{\Pr(B)} = \frac{\Pr(B \mid A)\Pr(A)}{\Pr(B)}
+$$\
+
+#### Question 4
+
+A young man was diagnosed as having a disease that occurs extremely rarely in young people. A statistician friend told him it was probably a mistake. She reasoned as follows: No medical test is perfect—there are always incidences of false positives and false negatives.
+
+Let $D$ stand for the event that he has the disease and let $+$ stand for the event that an individual responds positively to the test.\
+Assume:\
+- $P(D) = 1/100{,}000 = 0.00001$\
+- $P(+ \mid D) = 0.992$\
+- $P(+ \mid D^c) = 0.011$
+
+(The test is very good compared to many medical tests, giving only 0.8% false negatives and 1.1% false positives.)
+
+Find the probability that he has the disease given that he has a positive test response, i.e., compute $P(D \mid +)$.
+
+> *(After you make this calculation, you will not be surprised to learn that he did not have the disease.)*
+
+$$
+\Pr(D \mid +) = \frac{\Pr(+ \mid D)\Pr(D)}{\Pr(+ \mid D^c)\Pr(D^c) + \Pr(+ \mid D)\Pr(D)}
+$$\
+
+(.992 \* .00001) / ((.001 \* .99999) + (.992 \* .00001)) = .000901
+
+#### Question 5
+
+For this question, we are working with the following probability mass function (pmf):\
+$$
+f(x) = \frac{7!}{x!(7-x)!}(0.6)^x(0.4)^{7-x} \mathbf{1}_{\{x \in \{0,1,2,3,4,5,6,7\}\}}
+$$
+
+(a) Plot the pmf using R.
+
+Make sure to include the graphic and your R code in your answer. The axis labels and overall chart title should be descriptive---make the plot look nice and be self-explanatory.
+
+```{r}
+library(tidyverse)
+# Define x values
+x_vals <- 0:7
+
+# Compute pmf values (use dbinom)
+vals <- dbinom(x_vals, size = 8, prob = .6)
+
+# Plot the pmf
+
+barplot(
+  height = vals,
+  names.arg = x_vals,
+  col = "hotpink",
+  border = "hotpink",
+  main = "PMF of Binomial",
+  xlab = "Number of Successes (x)",
+  ylab = "Probability"
+)
+```
+
+(b) What is the mean of $X$’s distribution?
+
+```{r}
+# Calculate mean
+n <- 8
+p <- .6
+mean <- n*p
+mean
+```
+
+(c) What is the support of $X$’s distribution?
+
+The support of $X$'s distribution, since it is a binomial distribution are all the values from 0 to n. Those include {0, 1, 2, 3, 4, 5, 6, 7}.
+
+#### Question 6
+
+For this question, we are working with the following probability density function (pdf):\
+$$
+f(x) = \left(\frac{1}{100}\right) \exp\left(\frac{x}{100}\right) \mathbf{1}_{(x < 0)}
+$$
+
+(a) Plot the pdf using R, and make sure to include the graphic and your R code in your answer. Also, make sure that you do NOT call the y-axis the probability, but rather the probability density (or density, for short).
+
+```{r}
+# Define x values
+x_vals <- seq(-300, 0, length.out = 300)
+
+# Compute pdf values 
+vals <- (1/100) * exp(x_vals / 100)
+
+# Plot the pdf
+plot(
+  x_vals, vals, 
+  type = "l", lwd = 2, col = "pink",
+  main = "PDF: f(x) = (1/100) * exp(x/100)",
+  xlab = "X Values",
+  ylab = "Probability Density"
+)
+```
+
+(b) What is the support of $X$’s distribution?
+
+The support of $X$'s distribution is negative infinity to 0. In this case, I only plotted the points from -300-0.
+
+#### Question 7
+
+Assume that $Y \sim N(20, 4^2)$.
+
+(a) What is the standard deviation of $Y$?
+
+$$
+\sigma^2 = 4^2 = 16 = \sqrt{16} = 4
+$$\
+
+(b) Compute $P(Y < 28.4)$
+
+```{r}
+# P(Y < 28.4)
+pnorm(28.4, mean = 20, sd = 4)
+```
+
+(c) Compute $P(Y > 14)$
+
+```{r}
+# P(Y > 14)
+1-pnorm(14, mean = 20, sd = 4)
+```
+
+(d) Compute $P(17.4 < Y ≤ 23.9)$
+
+```{r}
+# P(17.4 < Y <= 23.9)
+pnorm(23.9, mean = 20, sd = 4) - pnorm(17.4, mean = 20, sd = 4)
+```
+
+(e) First quartile (25th percentile) of $Y$
+
+```{r}
+# First quartile
+qnorm(.25, mean = 20, sd = 4)
+```
+
+(f) What is $f(20)$, the density at the mode?
+
+```{r}
+# Density at the mode
+dnorm(20, mean = 20, sd = 4)
+```
+
+Great job! After completing, hit the render button at the top of R studio to generate a pdf file that is saved to your computer. That is what you will turn in on learning suite.
