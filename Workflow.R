@@ -3,15 +3,14 @@ library(tidymodels)
 library(vroom)
 library(ggplot2)
 library(patchwork)
-library(skimr)
 library(DataExplorer)
-library(dplyr)
+library(glmnet)
+library(rpart)
+library(ranger)
 
 test_file <- vroom("test.csv")
 train_file <- vroom("train.csv")
 
-skimr::skim(test_file)
-skimr::skim(train_file)
 # dplyr::glimpse(dataset) - lists the variable type of each column (makes sure each variable is the right type)
 # skimr::skim(dataset) - nice overview of the dataset
 # DataExploerer::plot_intro(dataset) - visualization of glimpse()
@@ -34,22 +33,35 @@ train_file <- train_file %>%
 train_file <- train_file %>%
   mutate(count = log(count))
 
-my_recipe <- recipe(count ~ ., data = train_file) %>%
-  step_mutate(weather = ifelse(weather == 4, 3, weather)) %>%
-  step_mutate(weather = as.factor(weather)) %>%
-  step_time(datetime, features = "hour") %>%
-  step_mutate(season = as.factor(season)) %>%
-  step_rm(atemp)
-prepped_recipe <- prep(my_recipe)
-baked_recipie <- bake(prepped_recipe, new_data = train_file)
-
-
 
 ## Setup and Fit the Linear Regression Model
 my_linear_model <- linear_reg() %>% #Type of model
   set_engine("lm") %>% # Engine = What R function to use
   set_mode("regression") # Regression just means quantitative response
 
+
+my_recipe <- recipe(count ~ ., data = train_file) %>%
+  step_mutate(weather = ifelse(weather == 4, 3, weather)) %>%
+  step_mutate(weather = as.factor(weather)) %>%
+  step_mutate(season = as.factor(season)) %>%
+  step_time(datetime, features = "hour") %>%
+  step_mutate(
+    hour_sin = sin(2 * pi * datetime_hour / 24),
+    hour_cos = cos(2 * pi * datetime_hour / 24)) %>%
+  step_date(datetime, features =  "doy") %>%  # add day-of-week, day-of-year
+  step_rm(datetime) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors())
+prepped_recipe <- prep(my_recipe)
+baked_recipie <- bake(prepped_recipe, new_data = train_file)
+
+
+
+my_mod <- rand_forest(mtry = tune(),
+                        min_n=tune(),
+                      trees=1000) %>% #Type of model
+  set_engine("ranger") %>% # What R function to use
+  set_mode("regression")
 
 
 ## Combine my Recipe and Model into a Workflow and fit
@@ -59,10 +71,53 @@ bike_workflow <- workflow() %>%
   fit(data = train_file)
 
 
+## Set Workflow
+preg_wf <- workflow() %>%
+add_recipe(my_recipe) %>%
+add_model(my_mod)
+
+## Set up grid of tuning values
+mygrid <- grid_regular(mtry(range = c(1, 15)),min_n(), levels = 3)
+
+
+## Split data for CV
+folds <- vfold_cv(train_file, v = 10, repeats=1)
+
+## Run the CV1
+CV_results <- preg_wf %>%
+tune_grid(resamples=folds,
+          grid=mygrid,
+          metrics=metric_set(rmse, mae)) #Or leave metrics NULL
+
+## Find Best Tuning Parameters
+bestTune <- CV_results %>%
+select_best(metric="rmse")
+
+final_wf <- preg_wf %>%
+finalize_workflow(bestTune) %>%
+fit(data=train_file)
+
+## Predict
+final_wf %>%
+predict(new_data = test_file)
+
 ## Run all the steps on test data
-lin_preds <- predict(bike_workflow, new_data = test_file )
+lin_preds <- predict(final_wf, new_data = test_file )
 
 lin_preds <- lin_preds %>% 
   mutate(.pred = exp(.pred))
 
-head(baked_recipie, 5)
+
+kaggle_submission <- lin_preds %>%
+  bind_cols(., test_file) %>% #Bind predictions with test data
+  select(datetime, .pred) %>% #Just keep datetime and prediction variables
+  rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
+  mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
+  mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
+
+## Write out the file
+vroom_write(x=kaggle_submission, file="./TuningRandomForestModel.csv", delim=",")
+
+# sine and cosine of hour
+# break hour down into a factor throughout the week
+# log transformation on count

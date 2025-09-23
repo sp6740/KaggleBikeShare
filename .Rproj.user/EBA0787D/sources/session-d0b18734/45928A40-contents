@@ -1,0 +1,2 @@
+pmf <- dbinom(0:10, size = 10, prob = .9)
+plot(pmf)

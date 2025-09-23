@@ -1,0 +1,5 @@
+pmf <- dbinom(0:10, size = 10, prob = .9)
+plot(pmf, type = "h")
+
+pmf2 <- dbinom(0:10, size = 10, prob = .85)
+plot(pmf2, type = "h")

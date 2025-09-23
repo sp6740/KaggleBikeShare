@@ -1,0 +1,4 @@
+dbinom(3, size = 10, prob = .2)
+
+dbinom(2:4, size = 10, prob = .2)
+
