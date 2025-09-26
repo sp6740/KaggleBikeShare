@@ -1,3 +1,4 @@
+setwd("C:/Users/sophi/OneDrive/Documents/Stat_348/KaggleBikeShare")
 library(tidyverse)
 library(tidymodels)
 library(vroom)
@@ -7,6 +8,9 @@ library(DataExplorer)
 library(glmnet)
 library(rpart)
 library(ranger)
+library(bonsai)
+library(lightgbm)
+
 
 test_file <- vroom("test.csv")
 train_file <- vroom("train.csv")
@@ -57,31 +61,35 @@ baked_recipie <- bake(prepped_recipe, new_data = train_file)
 
 
 
-my_mod <- rand_forest(mtry = tune(),
-                        min_n=tune(),
-                      trees=1000) %>% #Type of model
-  set_engine("ranger") %>% # What R function to use
+# my_mod <- rand_forest(mtry = tune(),
+#                         min_n=tune(),
+#                       trees=600) %>% #Type of model
+#   set_engine("ranger") %>% # What R function to use
+#   set_mode("regression")
+
+
+bart_model <- bart(trees=tune()) %>% # BART figures out depth and learn_rate
+  set_engine("dbarts") %>% 
   set_mode("regression")
 
-
 ## Combine my Recipe and Model into a Workflow and fit
-bike_workflow <- workflow() %>%
-  add_recipe(my_recipe) %>%
-  add_model(my_linear_model) %>%
-  fit(data = train_file)
+# bike_workflow <- workflow() %>%
+#   add_recipe(my_recipe) %>%
+#   add_model(my_linear_model) %>%
+#   fit(data = train_file)
 
 
 ## Set Workflow
 preg_wf <- workflow() %>%
 add_recipe(my_recipe) %>%
-add_model(my_mod)
+add_model(bart_model)
 
 ## Set up grid of tuning values
-mygrid <- grid_regular(mtry(range = c(1, 15)),min_n(), levels = 3)
+mygrid <- grid_regular(trees(range = c(1, 15)), levels = 3)
 
 
 ## Split data for CV
-folds <- vfold_cv(train_file, v = 10, repeats=1)
+folds <- vfold_cv(train_file, v = 6, repeats=1)
 
 ## Run the CV1
 CV_results <- preg_wf %>%
