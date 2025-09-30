@@ -10,7 +10,9 @@ library(rpart)
 library(ranger)
 library(bonsai)
 library(lightgbm)
+library(agua)
 
+# h2o::h2o.init()
 
 test_file <- vroom("test.csv")
 train_file <- vroom("train.csv")
@@ -46,20 +48,29 @@ my_linear_model <- linear_reg() %>% #Type of model
 
 my_recipe <- recipe(count ~ ., data = train_file) %>%
   step_mutate(weather = ifelse(weather == 4, 3, weather)) %>%
-  step_mutate(weather = as.factor(weather)) %>%
-  step_mutate(season = as.factor(season)) %>%
+  step_mutate(across(c(weather, season, holiday), as.factor)) %>%
   step_time(datetime, features = "hour") %>%
+  step_interact(terms = ~ datetime_hour:workingday) %>%
+  step_interact(terms = ~ datetime_hour:temp) %>%
+  step_date(datetime, features =  c("doy", "dow")) %>%
   step_mutate(
     hour_sin = sin(2 * pi * datetime_hour / 24),
-    hour_cos = cos(2 * pi * datetime_hour / 24)) %>%
-  step_date(datetime, features =  "doy") %>%  # add day-of-week, day-of-year
+    hour_cos = cos(2 * pi * datetime_hour / 24),
+    doy_sin  = sin(2 * pi * datetime_doy / 365),
+    doy_cos  = cos(2 * pi * datetime_doy / 365)) %>%
+  step_mutate(hour = as.factor(datetime_hour)) %>%
   step_rm(datetime) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_normalize(all_numeric_predictors())
 prepped_recipe <- prep(my_recipe)
 baked_recipie <- bake(prepped_recipe, new_data = train_file)
 
-
+## Define the model
+## max_runtime_secs = how long to let h2o.ai run
+## max_models = how many models to stack
+# auto_model <- auto_ml() %>%
+# set_engine("h2o", max_runtime_secs=300, max_models=6) %>%
+# set_mode("regression")
 
 # my_mod <- rand_forest(mtry = tune(),
 #                         min_n=tune(),
@@ -69,14 +80,14 @@ baked_recipie <- bake(prepped_recipe, new_data = train_file)
 
 
 bart_model <- bart(trees=tune()) %>% # BART figures out depth and learn_rate
-  set_engine("dbarts") %>% 
+  set_engine("dbarts") %>%
   set_mode("regression")
 
 ## Combine my Recipe and Model into a Workflow and fit
-# bike_workflow <- workflow() %>%
-#   add_recipe(my_recipe) %>%
-#   add_model(my_linear_model) %>%
-#   fit(data = train_file)
+# automl_wf <- workflow() %>%
+# add_recipe(my_recipe) %>%
+# add_model(auto_model) %>%
+# fit(data=train_file)
 
 
 ## Set Workflow
@@ -84,39 +95,39 @@ preg_wf <- workflow() %>%
 add_recipe(my_recipe) %>%
 add_model(bart_model)
 
-## Set up grid of tuning values
-mygrid <- grid_regular(trees(range = c(1, 15)), levels = 3)
+# ## Set up grid of tuning values
+mygrid <- grid_regular(trees(range = c(1, 17)), levels = 3)
+# 
+# 
+# ## Split data for CV
+folds <- vfold_cv(train_file, v = 4, repeats=1)
 
-
-## Split data for CV
-folds <- vfold_cv(train_file, v = 6, repeats=1)
-
-## Run the CV1
+# ## Run the CV1
 CV_results <- preg_wf %>%
 tune_grid(resamples=folds,
           grid=mygrid,
           metrics=metric_set(rmse, mae)) #Or leave metrics NULL
-
-## Find Best Tuning Parameters
+# 
+# ## Find Best Tuning Parameters
 bestTune <- CV_results %>%
 select_best(metric="rmse")
-
+# 
 final_wf <- preg_wf %>%
 finalize_workflow(bestTune) %>%
 fit(data=train_file)
 
-## Predict
+# ## Predict
 final_wf %>%
 predict(new_data = test_file)
 
 ## Run all the steps on test data
-lin_preds <- predict(final_wf, new_data = test_file )
+preds <- predict(final_wf, new_data = test_file )
 
-lin_preds <- lin_preds %>% 
+preds <- preds %>% 
   mutate(.pred = exp(.pred))
 
 
-kaggle_submission <- lin_preds %>%
+kaggle_submission <- preds %>%
   bind_cols(., test_file) %>% #Bind predictions with test data
   select(datetime, .pred) %>% #Just keep datetime and prediction variables
   rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
@@ -124,7 +135,7 @@ kaggle_submission <- lin_preds %>%
   mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
 
 ## Write out the file
-vroom_write(x=kaggle_submission, file="./TuningRandomForestModel.csv", delim=",")
+vroom_write(x=kaggle_submission, file="./FeatureEngineering.csv", delim=",")
 
 # sine and cosine of hour
 # break hour down into a factor throughout the week
