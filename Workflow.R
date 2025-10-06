@@ -49,10 +49,11 @@ my_linear_model <- linear_reg() %>% #Type of model
 my_recipe <- recipe(count ~ ., data = train_file) %>%
   step_mutate(weather = ifelse(weather == 4, 3, weather)) %>%
   step_mutate(across(c(weather, season, holiday), as.factor)) %>%
-  step_time(datetime, features = "hour") %>%
+  step_time(datetime, features = c("hour")) %>%
   step_interact(terms = ~ datetime_hour:workingday) %>%
   step_interact(terms = ~ datetime_hour:temp) %>%
-  step_date(datetime, features =  c("doy", "dow")) %>%
+  step_interact(terms = ~ weather:season) %>%
+  step_date(datetime, features =  c("doy", "dow", "month", "year")) %>%
   step_mutate(
     hour_sin = sin(2 * pi * datetime_hour / 24),
     hour_cos = cos(2 * pi * datetime_hour / 24),
@@ -96,7 +97,7 @@ add_recipe(my_recipe) %>%
 add_model(bart_model)
 
 # ## Set up grid of tuning values
-mygrid <- grid_regular(trees(range = c(1, 17)), levels = 3)
+mygrid <- grid_regular(trees(range = c(1, 50)), levels = 5)
 # 
 # 
 # ## Split data for CV
@@ -107,7 +108,7 @@ CV_results <- preg_wf %>%
 tune_grid(resamples=folds,
           grid=mygrid,
           metrics=metric_set(rmse, mae)) #Or leave metrics NULL
-# 
+
 # ## Find Best Tuning Parameters
 bestTune <- CV_results %>%
 select_best(metric="rmse")
